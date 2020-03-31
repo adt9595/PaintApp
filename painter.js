@@ -1,5 +1,3 @@
-
-
 var colourDict={
 	0: '#000000', // Black
 	1: '#ffffff', // White
@@ -11,41 +9,83 @@ var colourDict={
 	7: '#1e5e39' // Dark Green
 }
 
+var brushDict={
+	0: 'round',
+	1: 'square',
+	2: 'butt'
+}
+
 window.addEventListener('load',() =>{
-	const canvas = document.querySelector('#drawCanvas');
+	var canvases = [document.querySelector('#layer1'),
+					document.querySelector('#layer2'),
+					document.querySelector('#layer3')];
 	const brushCanvas = document.querySelector('#brushCanvas');
-	const inputColour = document.getElementsByClassName('inputColour')[0];
-	const context = canvas.getContext('2d');
+	var contexts = [canvases[0].getContext('2d'),
+					canvases[1].getContext('2d'),
+					canvases[2].getContext('2d')]
 	const brushContext = brushCanvas.getContext('2d');
-	const colours = document.querySelectorAll('div.colour');
+	var currentContext = contexts[0];
+	const inputColour = document.getElementsByClassName('inputColour')[0];
+	const colourButtons = document.querySelectorAll('div.colour');
+	const layerButtons = document.querySelectorAll('div.layerSelector');
+	const brushButtons = document.querySelectorAll('div.brushStyleSelector');
+	
 
 	let brush = document.getElementById('brush');
-	numColours = colours.length;
-	context.lineWidth = 10;
-	let brushSize = context.lineWidth;
-	let mouseOffsetX = 81, mouseOffsetY = 3;
-	let widthOffset = 100, heightOffset = 20;
+	
+	numColours = colourButtons.length;
+	numLayers = canvases.length;
+
+	currentContext.lineWidth = 10;
+	let brushSize = currentContext.lineWidth;
 	let isDrawing = false;
 	let isErasing = false;
 	let isFilling = false;
 	let brushColour;
 	brushColour = '#000000';
+	let currentBrushStyle = 'round';
 
+	// Add colour button links
 	for(i=0;i<numColours;i++){
 		(function(){
-			var self = colours[i];
+			var self = colourButtons[i];
 			var tmpColour = colourDict[i];
 			self.style.backgroundColor = tmpColour;
-			colours[i].addEventListener('click',function(){
+			colourButtons[i].addEventListener('click',function(){
 				setColour(tmpColour);
 			});
 		}());
 	}
-	context.lineCap = "round";
-	canvas.height = window.innerHeight - heightOffset;
-	canvas.width = window.innerWidth - widthOffset;
-	brushCanvas.height = canvas.height;
-	brushCanvas.width = canvas.width;
+
+	// Add layer button links
+	for(i=0;i<numLayers;i++){
+		(function(){
+			var index = i;
+			layerButtons[i].addEventListener('click',function(){
+				changeContext(index);
+			});
+		}());
+	}
+
+	// Add brush button links
+	for(i=0;i<numLayers;i++){
+		(function(){
+			var index = i;
+			brushButtons[i].addEventListener('click',function(){
+				changeBrushStyle(index);
+			});
+		}());
+	}
+
+	for(i=0;i<numLayers;i++){
+		contexts[i].lineCap = "round";
+	}
+	for(i=0;i<numLayers;i++){
+		canvases[i].height = window.innerHeight;
+		canvases[i].width = window.innerWidth;
+	}
+	brushCanvas.height = canvases[0].height;
+	brushCanvas.width = canvases[0].width;
 
 	function colourUpdate(){
 		brushContext.fillStyle = brushColour;
@@ -58,7 +98,7 @@ window.addEventListener('load',() =>{
 		}
 		// brushContext.globalAlpha = 0.2;
 		//brushContext.fillRect(0.0495*window.innerWidth,0.085*window.innerHeight,rectDimensions,rectDimensions);
-		brushContext.fillRect(55,0.085*window.innerHeight,rectDimensions,rectDimensions);
+		brushContext.fillRect(58.6,0.085*window.innerHeight,rectDimensions,rectDimensions);
 		// brushContext.globalAlpha = 1.0;
 	}
 
@@ -73,12 +113,12 @@ window.addEventListener('load',() =>{
 
 	function endDraw(){
 		isDrawing = false;
-		context.beginPath();
+		currentContext.beginPath();
 	}
 
 	function endErase(){
 		isErasing = false;
-		context.beginPath();
+		currentContext.beginPath();
 	}
 
 	function draw(e){
@@ -90,11 +130,11 @@ window.addEventListener('load',() =>{
 			erase(e);
 			return;
 		}
-		computeDraw(e,context,brushColour);		
+		computeDraw(e,currentContext,brushColour);		
 	}
 
 	function drawBrush(e){
-		brushContext.clearRect(0, 0, canvas.width, canvas.height);
+		brushContext.clearRect(0, 0, brushCanvas.width, brushCanvas.height);
 		if(isFilling){	
 			return;
 		}
@@ -104,17 +144,17 @@ window.addEventListener('load',() =>{
 
 	function computeDraw(e,ctx,colour){
 		ctx.lineWidth = brushSize;
-		ctx.lineCap = "round";
-		ctx.lineTo(e.clientX-mouseOffsetX,e.clientY-mouseOffsetY);
+		ctx.lineCap = currentBrushStyle;
+		ctx.lineTo(getMousePos(e)[0],getMousePos(e)[1]);
 		ctx.strokeStyle = colour;
 		ctx.stroke()
 		ctx.beginPath();
-		ctx.moveTo(e.clientX-mouseOffsetX,e.clientY-mouseOffsetY);		
+		ctx.moveTo(getMousePos(e)[0],getMousePos(e)[1]);
 	}
 
 	function erase(e){
 		isDrawing = false;
-		computeDraw(e,context,'#ffffff');
+		computeDraw(e,currentContext,'#ffffff');
 	}
 
 	function changeSize(e){
@@ -134,23 +174,23 @@ window.addEventListener('load',() =>{
 	}
 
 	function clearCanvas(){
-		context.clearRect(0, 0, canvas.width, canvas.height);
+		currentContext.clearRect(0, 0, brushCanvas.width, brushCanvas.height);
 	}
 
-	function imageToArray(){
-		var rows = canvas.height;
-		var cols = canvas.width;
-		var array = new Array(rows);
-		for(var i=0;i<array.length;i++){
-			array[i] = new Array(cols);
-		}
-		for(var i=0;i<rows;i++){
-			for(var j=0;j<cols;j++){
-				array[i][j] = 255;
-			}
-		}
-		return array;
-	}
+	// function imageToArray(){
+	// 	var rows = canvas.height;
+	// 	var cols = canvas.width;
+	// 	var array = new Array(rows);
+	// 	for(var i=0;i<array.length;i++){
+	// 		array[i] = new Array(cols);
+	// 	}
+	// 	for(var i=0;i<rows;i++){
+	// 		for(var j=0;j<cols;j++){
+	// 			array[i][j] = 255;
+	// 		}
+	// 	}
+	// 	return array;
+	// }
 
 
 	function rgbToHex(r,g,b){
@@ -175,93 +215,103 @@ window.addEventListener('load',() =>{
 	    return [r,g,b];
 	}
 
-	function undefinedToWhite(pixel){
-		if(pixel === undefined){
-			return 0;
-		}
-		return pixel;
+	// function undefinedToWhite(pixel){
+	// 	if(pixel === undefined){
+	// 		return 0;
+	// 	}
+	// 	return pixel;
+	// }
+
+	function changeContext(index){
+		currentContext = contexts[index]
+		brushCanvas.style.zIndex = -2*index + 6;
 	}
 
-	function fillInit(e){
-		var image = context.getImageData(0,0,canvas.width,canvas.height).data;
-		var imgArray = imageToArray();
-		var position = getMousePos(e);
-		console.log(position);
-		var targetColour = brushColour;
-		console.log(typeof position);
-		console.log(image.length);
-		console.log(4*canvas.width*canvas.height);
-		for(var i=0; i<canvas.height;i++){
-			for(var j=0; j<canvas.width;j++){
-				imgArray[i][j] = undefinedToWhite(image[0][canvas.width*i + j]);
-				imgArray[i][j+1] = undefinedToWhite(image[1][canvas.width*i + j]);
-				imgArray[i][j+2] = undefinedToWhite(image[2][canvas.width*i + j]);
-			}	
-		}
-		// try{
-		initialColour = rgbToHex(imgArray[position[1]][3*position[0]],imgArray[position[1]][3*position[0]+1],imgArray[position[1]][3*position[0]+2]);
-		// }
-	 //    catch(error){
-	 //    	console.log(imgArray.length);
-	 //    	console.log(imgArray[0].length);
-	 //    	console.log(position[1]);
-	 //    	console.log(3*position[0]);
-	 //    }
-		
-		floodFill(position,initialColour,targetColour,imgArray);
+	function changeBrushStyle(index){
+		currentBrushStyle = brushDict[index];
 	}
 
-	function floodFill(position,initialColour,targetColour,imgArray){
-		if(initialColour === targetColour){
-			return;
-		}
-		context.fillStyle = targetColour;
-		context.fillRect(position[0],position[1],1,1);
-		hexTargetColour = hexToRgb(targetColour);
-		imgArray[position[1]][3*position[0]+1] = hexTargetColour[0];
-		imgArray[position[1]][3*position[0]+2] = hexTargetColour[1];
-		imgArray[position[1]][3*position[0]+3] = hexTargetColour[2];
-		// imgArray[position[0],position[1]] = hexToRgb(targetColour)[0];
-		// imgArray[position[0],position[1]+1] = hexToRgb(targetColour)[1];
-		// imgArray[position[0],position[1]+2] = hexToRgb(targetColour)[2];
-		floodFill([position[0]+1,position[1]],initialColour,targetColour,imgArray);
-		floodFill([position[0]-1,position[1]],initialColour,targetColour,imgArray);
-		floodFill([position[0],position[1]-1],initialColour,targetColour,imgArray);
-		floodFill([position[0],position[1]+1],initialColour,targetColour,imgArray);
+	// function fillInit(e){
+	// 	var image = context.getImageData(0,0,canvas.width,canvas.height).data;
+	// 	var imgArray = imageToArray();
+	// 	var position = getMousePos(e);
+	// 	console.log(position);
+	// 	var targetColour = brushColour;
+	// 	console.log(typeof position);
+	// 	console.log(image.length);
+	// 	console.log(4*canvas.width*canvas.height);
+	// 	for(var i=0; i<canvas.height;i++){
+	// 		for(var j=0; j<canvas.width;j++){
+	// 			imgArray[i][j] = undefinedToWhite(image[0][canvas.width*i + j]);
+	// 			imgArray[i][j+1] = undefinedToWhite(image[1][canvas.width*i + j]);
+	// 			imgArray[i][j+2] = undefinedToWhite(image[2][canvas.width*i + j]);
+	// 		}	
+	// 	}
+	// 	// try{
+	// 	initialColour = rgbToHex(imgArray[position[1]][3*position[0]],imgArray[position[1]][3*position[0]+1],imgArray[position[1]][3*position[0]+2]);
+	// 	// }
+	//  //    catch(error){
+	//  //    	console.log(imgArray.length);
+	//  //    	console.log(imgArray[0].length);
+	//  //    	console.log(position[1]);
+	//  //    	console.log(3*position[0]);
+	//  //    }
 		
-		// floodFill([position[0]+1,position[1]],rgbToHex(imgArray[position[1]][3*(position[0]+1)],imgArray[position[1]][3*(position[0]+1)+1],imgArray[position[1]][3*(position[0]+1)+2]),targetColour,imgArray);
-		// floodFill([position[0]-1,position[1]],rgbToHex(imgArray[position[1]][3*(position[0]-1)],imgArray[position[1]][3*(position[0]-1)+1],imgArray[position[1]][3*(position[0]-1)+2]),targetColour,imgArray);
-		// floodFill([position[0],position[1]-1],rgbToHex(imgArray[position[1]-1][3*position[0]],imgArray[position[1]-1][3*position[0]+1],imgArray[position[1]-1][3*position[0]+2]),targetColour,imgArray);
-		// floodFill([position[0],position[1]+1],rgbToHex(imgArray[position[1]+1][3*position[0]],imgArray[position[1]+1][3*position[0]+1],imgArray[position[1]+1][3*position[0]+2]),targetColour,imgArray);
-		return;
-	}	
+	// 	floodFill(position,initialColour,targetColour,imgArray);
+	// }
+
+	// function floodFill(position,initialColour,targetColour,imgArray){
+	// 	if(initialColour === targetColour){
+	// 		return;
+	// 	}
+	// 	context.fillStyle = targetColour;
+	// 	context.fillRect(position[0],position[1],1,1);
+	// 	hexTargetColour = hexToRgb(targetColour);
+	// 	imgArray[position[1]][3*position[0]+1] = hexTargetColour[0];
+	// 	imgArray[position[1]][3*position[0]+2] = hexTargetColour[1];
+	// 	imgArray[position[1]][3*position[0]+3] = hexTargetColour[2];
+	// 	// imgArray[position[0],position[1]] = hexToRgb(targetColour)[0];
+	// 	// imgArray[position[0],position[1]+1] = hexToRgb(targetColour)[1];
+	// 	// imgArray[position[0],position[1]+2] = hexToRgb(targetColour)[2];
+	// 	floodFill([position[0]+1,position[1]],initialColour,targetColour,imgArray);
+	// 	floodFill([position[0]-1,position[1]],initialColour,targetColour,imgArray);
+	// 	floodFill([position[0],position[1]-1],initialColour,targetColour,imgArray);
+	// 	floodFill([position[0],position[1]+1],initialColour,targetColour,imgArray);
+		
+	// 	// floodFill([position[0]+1,position[1]],rgbToHex(imgArray[position[1]][3*(position[0]+1)],imgArray[position[1]][3*(position[0]+1)+1],imgArray[position[1]][3*(position[0]+1)+2]),targetColour,imgArray);
+	// 	// floodFill([position[0]-1,position[1]],rgbToHex(imgArray[position[1]][3*(position[0]-1)],imgArray[position[1]][3*(position[0]-1)+1],imgArray[position[1]][3*(position[0]-1)+2]),targetColour,imgArray);
+	// 	// floodFill([position[0],position[1]-1],rgbToHex(imgArray[position[1]-1][3*position[0]],imgArray[position[1]-1][3*position[0]+1],imgArray[position[1]-1][3*position[0]+2]),targetColour,imgArray);
+	// 	// floodFill([position[0],position[1]+1],rgbToHex(imgArray[position[1]+1][3*position[0]],imgArray[position[1]+1][3*position[0]+1],imgArray[position[1]+1][3*position[0]+2]),targetColour,imgArray);
+	// 	return;
+	// }	
 
 	window.addEventListener('resize',() =>{
-		canvas.height = window.innerHeight - heightOffset;
-		canvas.width = window.innerWidth - widthOffset;
-		brushCanvas.height = canvas.height;
-		brushCanvas.width = canvas.width;
+		for(i=0;i<numLayers;i++){
+			canvases[i].height = window.innerHeight;
+			canvases[i].width = window.innerWidth;
+		}
+		// canvas.height = window.innerHeight - heightOffset;
+		// canvas.width = window.innerWidth - widthOffset;
+		brushCanvas.height = canvases[0].height;
+		brushCanvas.width = canvases[0].width;
 		colourUpdate();
 
 	})
 
 	function getMousePos(e) {
-        var rect = canvas.getBoundingClientRect();
-        return [e.clientX - rect.left,e.clientY - rect.top];
-        // return {
-        //   x: e.clientX - rect.left,
-        //   y: e.clientY - rect.top
-        // };
+        var rect = brushCanvas.getBoundingClientRect();
+        return [(e.clientX - rect.left)/(rect.right-rect.left)*brushCanvas.width,
+        		(e.clientY - rect.top)/(rect.bottom-rect.top)*brushCanvas.height];
   	}
 
 
 	window.addEventListener('mousemove',draw);
 	window.addEventListener('mousedown',function(e){
-		if(isFilling){
-			fillInit(e);
-			isFilling = false;
-			return;
-		}
+		// if(isFilling){
+		// 	fillInit(e);
+		// 	isFilling = false;
+		// 	return;
+		// }
 		switch(e.button){
 			case 0:
 				beginDraw();
@@ -285,9 +335,9 @@ window.addEventListener('load',() =>{
 	window.addEventListener('wheel',changeSize);
 	document.getElementsByClassName('inputColour')[0].addEventListener('change',colourUpdate);
 	document.getElementById('clearButton').addEventListener('click',clearCanvas);
-	document.getElementById('bucket').addEventListener('click',function(e){
-		isFilling = true;
-	});
+	// document.getElementById('bucket').addEventListener('click',function(e){
+	// 	isFilling = true;
+	// });
 	document.oncontextmenu = function() {
 	  return false;
 	}

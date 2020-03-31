@@ -5,30 +5,39 @@
 	<title></title>
 </head>
 <body>
-	<div class="container">
-		<div class="toolbar">
-			<div class="colour" id='col1'></div><!--
-		 --><div class="colour" id='col2'></div><!--
-		 --><div class="colour" id='col3'></div><!--
-		 --><div class="colour" id='col4'></div><!--
-		 --><div class="colour" id='col5'></div><!--
-		 --><div class="colour" id='col6'></div><!--
-		 --><div class="colour" id='col7'></div><!--
-		 --><div class="colour" id='col8'></div>
-		 	<img id="bucket" src="paintbucket.png">
+	<div class="toolbar">
+		<div class="colour" id='col1'></div><!--
+	 --><div class="colour" id='col2'></div><!--
+	 --><div class="colour" id='col3'></div><!--
+	 --><div class="colour" id='col4'></div><!--
+	 --><div class="colour" id='col5'></div><!--
+	 --><div class="colour" id='col6'></div><!--
+	 --><div class="colour" id='col7'></div><!--
+	 --><div class="colour" id='col8'></div>
+	 	<!-- <img id="bucket" src="paintbucket.png"> -->
+	 	<div id="layerSelectors">
+		 	<div class="layerSelector" id="LS_1">1</div><!--
+		 --><div class="layerSelector" id="LS_2">2</div><!--
+		 --><div class="layerSelector" id="LS_3">3</div>
 	 	</div>
-	 	<div class="canvasHolder">
-			<canvas class="canvas" id="brushCanvas" style="position: absolute; left: 0; top: 0; z-index: 2;"></canvas>
-			<canvas class="canvas" id="drawCanvas" style="z-index: 1;"></canvas>
-			<input type="text" value="Colour" class="inputColour" style="z-index: 10;">
-			<button id="clearButton" type="button" style="z-index: 10;">CLEAR</button>
-		</div>
+	 	<!---->
+	 	<div id="brushStyles">
+		 	<div class="brushStyleSelector" id="BS_Round"></div><!--
+		 --><div class="brushStyleSelector" id="BS_Square"></div><!--
+		 --><div class="brushStyleSelector" id="BS_Line"></div>
+	 	</div>
+	
+	 	
+	 	
+ 	</div>
+ 	<div class="canvasHolder">
+		<canvas class="canvas" id="brushCanvas" style="position: absolute; left: 0; top: 0; z-index: 6;"></canvas>
+		<canvas class="canvas" id="layer1" style="position: absolute;z-index: 5;"></canvas>
+		<canvas class="canvas" id="layer2" style="position: absolute;z-index: 3;"></canvas>
+		<canvas class="canvas" id="layer3" style="position: absolute;z-index: 1;"></canvas>
+		<input type="text" value="Colour" class="inputColour" style="z-index: 10;">
+		<button id="clearButton" type="button" style="z-index: 10;">CLEAR</button>
 	</div>
-	
-
-
-	
-	
 	<script src="painter.js"></script>
 </body>
 </html>
