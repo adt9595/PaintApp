@@ -1,7 +1,6 @@
 *{
 	margin: 0;
 	padding: 0;
-
 }
 
 html,body{
@@ -9,10 +8,10 @@ html,body{
 	height: 100%;
 	font-family: Segoe UI;
 	overflow: hidden;
+	vertical-align: middle;
 }
 
 .canvasHolder{
-	
 	position:relative;
 	display: inline-block;
 	width: calc(100% - 80px);
@@ -23,10 +22,6 @@ html,body{
 
 .canvas{
 	box-sizing: border-box;
-	width: 100%;
-	height: 100%;
-	border: 4px solid grey;
-	/*width: 100%;*/
 	left: 0px;
 	margin: 0 auto;
 	position: relative;
@@ -38,12 +33,23 @@ html,body{
 	box-sizing: border-box;
 	width: 26.6px;
 	height: 26.6px;
+	line-height: 26.6px;
 	background: #aaaaaa;
 	display: inline-block;
 	text-align: center;
-	border: 1px solid #bbbbbb;
-	border-radius: 3px;
-	margin-bottom: 4px;
+
+
+	
+	/*border: 1px solid #bbbbbb;*/
+	/*border-radius: 3px;*/
+	
+	vertical-align: middle;
+}
+
+#layerSelectors{
+	display: inline-block;
+	vertical-align: middle;
+	margin-bottom: 8px;
 }
 
 .layerSelector:hover,.brushStyleSelector:hover{
@@ -60,6 +66,7 @@ html,body{
 	display: inline-block;
 	border: 1px solid #bbbbbb;
 	vertical-align: middle;
+	margin-bottom: 8px;
 	/*position: absolute;*/
 }
 
@@ -74,14 +81,27 @@ html,body{
 }
 
 .toolbar{
-	background: #222222;
+	/*background: #222222;*/
+	background: linear-gradient(230deg,#624848,#555570);
 	display: inline-block;
 	width: 80px;
 	height: 100%;
 	position: absolute;
 }
 
+.colour{
+	box-sizing: border-box;
+	width: 50%;
+	height: 42px;
+	margin-bottom: 0;
+	display: inline-block;
+	vertical-align: top;
+	/*border: 1px solid #dddddd;*/
+}
 
+#colours{
+	margin-bottom: 8px;
+}
 
 .inputColour{
 	color: white;
@@ -96,17 +116,24 @@ html,body{
 	text-align: center;
 	display: inline-block;
 }
-.canvasHolder button{
-	background: #f5ec42;
-	right: 5vw;
-	top: 5vh;
-	position: absolute;
-	width: 60px;
+
+#clearButton{
+	background: #aaaaaa;
+	/*position: absolute;*/
+	width: 80px;
 	height: 60px;
 	border: 1px solid black;
 	border-style: hidden;
-	border-radius: 3px;
 	display: inline-block;
+}
+
+#clearButton:hover{
+	cursor: pointer;
+	background: #bbbbbb;
+}
+
+#clearHolder{
+	text-align: center;
 }
 
 .canvasHolder button:hover{
@@ -114,11 +141,7 @@ html,body{
 
 }
 
-.colour{
-	width: 50%;
-	height: 45px;
-	display: inline-block;
-}
+
 
 #bucket{
 	z-index: 10;
