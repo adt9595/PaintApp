@@ -15,19 +15,30 @@ var brushDict={
 	2: 'butt'
 }
 
+var canvases, contexts;
+var currentCanvas, currentContext;
+var brushCanvas, brushContext;
+
 window.addEventListener('load',() =>{
 	// Get canvases
-	var canvases = [document.querySelector('#layer1'),
-					document.querySelector('#layer2'),
-					document.querySelector('#layer3')];
-	const brushCanvas = document.querySelector('#brushCanvas');
+	canvases = [document.querySelector('#layer1'),
+				document.querySelector('#layer2'),
+				document.querySelector('#layer3')];
+	brushCanvas = document.querySelector('#brushCanvas');
+	currentCanvas = canvases[0];
+	for(i=0;i<canvases.length;i++){
+		canvases[i].style.opacity = 1.0;
+	}
+	let numLayers = canvases.length;
 
 	// Get contexts
-	var contexts = [canvases[0].getContext('2d'),
-					canvases[1].getContext('2d'),
-					canvases[2].getContext('2d')]
-	const brushContext = brushCanvas.getContext('2d');
-	var currentContext = contexts[0];
+	contexts = [canvases[0].getContext('2d'),
+				canvases[1].getContext('2d'),
+				canvases[2].getContext('2d')]
+	brushContext = brushCanvas.getContext('2d');
+	currentContext = contexts[0];
+
+	var currentColour = document.getElementById('currentColour');
 
 	const inputColour = document.getElementsByClassName('inputColour')[0];
 	inputColour.addEventListener('input',colourUpdate);
@@ -35,21 +46,30 @@ window.addEventListener('load',() =>{
 	const colourButtons = document.querySelectorAll('div.colour');
 	const layerButtons = document.querySelectorAll('div.layerSelector');
 	const brushButtons = document.querySelectorAll('div.brushStyleSelector');
+	let numColours = colourButtons.length;
+
 	const clearButton = document.getElementById('clearButton');
 	clearButton.addEventListener('click',clearCanvas);
-	
-	let brush = document.getElementById('brush');
-	
-	numColours = colourButtons.length;
-	numLayers = canvases.length;
 
-	currentContext.lineWidth = 10;
-	let brushSize = currentContext.lineWidth;
+	const opacitySlider = document.getElementById('opacity');
+	opacitySlider.addEventListener('input',setOpacity);
+	opacitySlider.value = 1.0;
+	
+	const shapeButtons = document.querySelectorAll('div.shape');
+	let numShapes = shapeButtons.length;
+
+	// const rectButton = document.getElementById('rectangle');
+	// rectButton.addEventListener('click',toggleRectangle);
+
+	const brush = document.getElementById('brush');
+	
+	let currentShape = -1;
 	let isDrawing = false;
+	let isDrawingShape = false;
 	let isErasing = false;
-	let brushColour;
-	brushColour = '#000000';
-	let currentBrushStyle = 'round';
+	let shapeStartingPosition;
+	let mousedown = false;
+
 
 	// Add colour button listeners
 	for(i=0;i<numColours;i++){
@@ -63,48 +83,50 @@ window.addEventListener('load',() =>{
 		}());
 	}
 
-	// Add layer button listeners
 	for(i=0;i<numLayers;i++){
+		// Add layer button listeners
 		(function(){
 			var index = i;
 			layerButtons[i].addEventListener('click',function(){
 				changeContext(index);
 			});
 		}());
-	}
 
-	// Add brush style button listeners
-	for(i=0;i<numLayers;i++){
+		// Add brush style button listeners
 		(function(){
 			var index = i;
 			brushButtons[i].addEventListener('click',function(){
 				changeBrushStyle(index);
 			});
 		}());
-	}
 
-	for(i=0;i<numLayers;i++){
-		contexts[i].lineCap = "round";
-	}
-	for(i=0;i<numLayers;i++){
+		// Set default sizes
 		canvases[i].height = window.innerHeight;
 		canvases[i].width = window.innerWidth;
 	}
+
+	// Add shape button listeners
+	for(i=0;i<numShapes;i++){
+		(function(){
+			var index = i;
+			shapeButtons[i].addEventListener('click',function(){
+				changeShape(index);
+			});
+		}());
+	}
+
+	currentContext.lineWidth = 10;
+	let brushSize = currentContext.lineWidth;
+	let brushColour = '#000000';
+	let brushStyle = 'round';
+	currentContext.lineCap = brushStyle;
 	brushCanvas.height = canvases[0].height;
 	brushCanvas.width = canvases[0].width;
 
 	function colourUpdate(){
 		brushColour = inputColour.value;
 		brushContext.fillStyle = brushColour;
-		let rectDimensions;
-		let colourOffset = document.getElementsByClassName('inputColour')[0].offsetLeft;//inputColour.offsetLeft;
-		if(window.innerWidth > 1270){
-			rectDimensions = 0.04*window.innerWidth;
-		}
-		else{
-			rectDimensions = 53;
-		}
-		brushContext.fillRect(colourOffset,0.085*window.innerHeight,rectDimensions,rectDimensions);
+		currentColour.style.backgroundColor = brushColour;
 	}
 
 	function beginDraw(){
@@ -140,18 +162,100 @@ window.addEventListener('load',() =>{
 
 	function drawBrush(e){
 		brushContext.clearRect(0, 0, brushCanvas.width, brushCanvas.height);
-		colourUpdate();
-		computeDraw(e,brushContext,brushColour);
+		//colourUpdate();
+		computeDrawBrush(e);
+	}
+
+	function computeDrawBrush(e){
+		brushContext.lineWidth = brushSize;
+		brushContext.lineCap = brushStyle;
+		brushContext.moveTo(getMousePos(e)[0],getMousePos(e)[1]);
+		brushContext.strokeStyle = brushColour;
+		brushContext.beginPath()
+		brushContext.lineTo(getMousePos(e)[0],getMousePos(e)[1]);
+		brushContext.stroke();
 	}
 
 	function computeDraw(e,ctx,colour){
 		ctx.lineWidth = brushSize;
-		ctx.lineCap = currentBrushStyle;
+		ctx.lineCap = brushStyle;
 		ctx.lineTo(getMousePos(e)[0],getMousePos(e)[1]);
 		ctx.strokeStyle = colour;
-		ctx.stroke()
+		if(getMousePos(e)[0] >= 0){
+			ctx.stroke();
+		}
+		
 		ctx.beginPath();
 		ctx.moveTo(getMousePos(e)[0],getMousePos(e)[1]);
+	}
+
+	function toggleRectangle(){
+		isDrawingRectangle = isDrawingRectangle ? false : true;
+	}
+
+	function changeShape(index){
+		if(index >= 0){
+			setActive(shapeButtons,index);
+		}
+		else{
+			clearActive(shapeButtons);
+		}
+		currentShape = index;
+	}
+
+	function drawShape(e, ctx, shapeIndex){
+		brushContext.clearRect(0,0,brushCanvas.width,brushCanvas.height);
+		ctx.lineWidth = brushSize;
+		ctx.strokeStyle = brushColour;
+		switch(shapeIndex){
+			case 0:
+				drawLine(e,ctx);
+				break;
+			case 1:
+				drawRectangle(e,ctx);
+				break;
+			case 2:
+				drawIsoTriangle(e,ctx);
+				break;
+		}
+	}
+
+	function drawLine(e,ctx){
+		ctx.lineCap = currentContext.lineCap;
+		let mousePos = getMousePos(e);
+		ctx.beginPath();
+		ctx.moveTo(shapeStartingPosition[0],shapeStartingPosition[1]);
+		ctx.lineTo(mousePos[0],mousePos[1]);
+		ctx.stroke();
+	}
+
+	function drawRectangle(e,ctx){
+		ctx.lineCap = 'square';
+		let mousePos = getMousePos(e);
+		ctx.beginPath();
+		ctx.moveTo(shapeStartingPosition[0],shapeStartingPosition[1]);
+		ctx.lineTo(shapeStartingPosition[0],mousePos[1]);
+		ctx.stroke();
+		ctx.lineTo(mousePos[0],mousePos[1]);
+		ctx.stroke();
+		ctx.lineTo(mousePos[0],shapeStartingPosition[1]);
+		ctx.stroke();
+		ctx.lineTo(shapeStartingPosition[0],shapeStartingPosition[1]);
+		ctx.stroke();
+		// brushContext.beginPath();
+	}
+
+	function drawIsoTriangle(e,ctx){
+		ctx.lineCap = 'round';
+		let mousePos = getMousePos(e);
+		ctx.beginPath();
+		ctx.moveTo(shapeStartingPosition[0],shapeStartingPosition[1]);
+		ctx.lineTo(mousePos[0],mousePos[1]);
+		ctx.stroke();
+		ctx.lineTo(mousePos[0]-2*(mousePos[0]-shapeStartingPosition[0]),mousePos[1]);
+		ctx.stroke();
+		ctx.lineTo(shapeStartingPosition[0],shapeStartingPosition[1]);
+		ctx.stroke();
 	}
 
 	function erase(e){
@@ -166,7 +270,13 @@ window.addEventListener('load',() =>{
 		else if(e.deltaY < 0 && brushSize < 250){
 			brushSize += 2;
 		}
-		drawBrush(e)
+		if(!isDrawingShape){
+			drawBrush(e)
+		}
+		else{
+			drawShape(e, brushContext,currentShape);
+		}
+		
 	}
 
 	function setColour(col){
@@ -191,7 +301,6 @@ window.addEventListener('load',() =>{
 	    return hex;
 	}
 
-
 	function hexToRgb(hex) {
 	    var bigint = parseInt(hex, 16);
 	    var r = (bigint >> 16) & 255;
@@ -201,18 +310,52 @@ window.addEventListener('load',() =>{
 	}
 
 	function changeContext(index){
-		currentContext = contexts[index]
+		setActive(layerButtons,index);
+
+		currentContext = contexts[index];
+		currentCanvas = canvases[index];
+		opacitySlider.value = currentCanvas.style.opacity;
 		brushCanvas.style.zIndex = -2*index + 6;
+		brushCanvas.style.opacity = currentCanvas.style.opacity;
+	}
+
+	function setActive(elements,index){
+		if(!elements[index].classList.contains('active')){
+			elements[index].className += " active";
+		}
+		for(i=0;i<elements.length;i++){
+			if(i === index){
+				continue;
+			}
+			if(elements[i].classList.contains('active')){
+				elements[i].className = elements[i].className.replace(" active","");
+			}
+		}
+	}
+
+	function clearActive(elements){
+		for(i=0;i<elements.length;i++){
+			if(elements[i].classList.contains('active')){
+				elements[i].className = elements[i].className.replace(" active","");
+			}
+		}
 	}
 
 	function changeBrushStyle(index){
-		currentBrushStyle = brushDict[index];
+		setActive(brushButtons,index);
+		brushStyle = brushDict[index];
+		currentContext.lineCap = brushStyle;
 	}
 
 	function getMousePos(e) {
         var rect = brushCanvas.getBoundingClientRect();
         return [(e.clientX - rect.left)/(rect.right-rect.left)*brushCanvas.width,
         		(e.clientY - rect.top)/(rect.bottom-rect.top)*brushCanvas.height];
+  	}
+
+  	function setOpacity(){
+  		currentCanvas.style.opacity = opacitySlider.value;
+  		brushCanvas.style.opacity = currentCanvas.style.opacity;
   	}
 
   	// Disable context menu on right-click
@@ -233,23 +376,47 @@ window.addEventListener('load',() =>{
 		colourUpdate();
 	})
 
-	window.addEventListener('mousemove',draw);
+	window.addEventListener('mousemove',function(e){
+		if(currentShape >= 0 && mousedown){
+			drawShape(e,brushContext,currentShape);
+		}
+		else{
+			draw(e);
+		}
+	});
 
 	window.addEventListener('mousedown',function(e){
+		if(getMousePos(e)[0] < 0){
+			return;
+		}
 		switch(e.button){
 			case 0:
+				mousedown = true;
+				if(currentShape >= 0){
+					shapeStartingPosition = getMousePos(e);
+					drawShape(e,brushContext,currentShape);
+					isDrawingShape = true;
+				}
 				beginDraw();
 				break;
 			case 2:
 				beginErase();
 				break;
 		}
-
 	})
 
 	window.addEventListener('mouseup',function(e){
 		switch(e.button){
 			case 0:
+				if(mousedown === true){
+					mousedown = false;
+					if(currentShape >= 0){
+						drawShape(e,currentContext,currentShape);
+						brushContext.moveTo(getMousePos(e)[0],getMousePos(e)[1])
+						changeShape(-1); // Return to brush
+						isDrawingShape = false;
+					}
+				}
 				endDraw();
 				break;
 			case 2:
